@@ -2,7 +2,7 @@ import * as React from "react";
 
 export default function DevApp() {
   return (
-    <div>
+    <div style={{ display: "flex" }}>
       <span>Hi ! {Date.now()}</span>
       <T>
         <T2>
@@ -20,38 +20,38 @@ export default function DevApp() {
           </T3>
         </T2>
       </T>
-      {/*<T>*/}
-      {/*  <T2>*/}
-      {/*    <T3>*/}
-      {/*      <T4>*/}
-      {/*        <Inner*/}
-      {/*          toto={5}*/}
-      {/*          titi={3}*/}
-      {/*          tata={4}*/}
-      {/*          fifi={2}*/}
-      {/*          fofo={3}*/}
-      {/*          initialText={"Hello World !"}*/}
-      {/*        />*/}
-      {/*      </T4>*/}
-      {/*    </T3>*/}
-      {/*  </T2>*/}
-      {/*</T>*/}
-      {/*<T>*/}
-      {/*  <T2>*/}
-      {/*    <T3>*/}
-      {/*      <T4>*/}
-      {/*        <Inner*/}
-      {/*          toto={5}*/}
-      {/*          titi={3}*/}
-      {/*          tata={4}*/}
-      {/*          fifi={2}*/}
-      {/*          fofo={3}*/}
-      {/*          initialText={"Hello World !"}*/}
-      {/*        />*/}
-      {/*      </T4>*/}
-      {/*    </T3>*/}
-      {/*  </T2>*/}
-      {/*</T>*/}
+      <T>
+        <T2>
+          <T3>
+            <T4>
+              <Inner
+                toto={5}
+                titi={3}
+                tata={4}
+                fifi={2}
+                fofo={3}
+                initialText={"Hello World !"}
+              />
+            </T4>
+          </T3>
+        </T2>
+      </T>
+      <T>
+        <T2>
+          <T3>
+            <T4>
+              <Inner
+                toto={5}
+                titi={3}
+                tata={4}
+                fifi={2}
+                fofo={3}
+                initialText={"Hello World !"}
+              />
+            </T4>
+          </T3>
+        </T2>
+      </T>
     </div>
   );
 }
