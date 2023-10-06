@@ -3,20 +3,35 @@
   --el-width: 150px;
   --el-height: fit-content;
 
-  --el-main-color: white;
-  --el-main-bg: transparent;
-
-  --el-host-color: white;
-  --el-host-bg: orangered;
-
   --el-font-size: 12px;
   --el-font-size-nd: 10px;
 
   --el-sep-h: 10px;
   --el-sep-v: 10px;
 
-  --el-collapsed-bg: purple;
-  --el-collapsed-main: while;
+  --el-main-color: white;
+  --el-main-bg: #242424;
+  --el-host-color: white;
+  --el-host-bg: #CD5C08;
+  --el-collapsed-bg: #451952;
+  --el-collapsed-main: white;
+  --body-bg: black;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --el-main-color: black;
+    --el-main-bg: white;
+    --el-host-color: black;
+    --el-host-bg: #CD5C08;
+    --el-collapsed-bg: #451952;
+    --el-collapsed-main: white;
+    --body-bg: white;
+  }
+}
+
+body {
+  background-color: var(--body-bg);
 }
 
 .el {
