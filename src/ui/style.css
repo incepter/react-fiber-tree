@@ -12,7 +12,7 @@
   --el-main-color: white;
   --el-main-bg: #242424;
   --el-host-color: white;
-  --el-host-bg: #CD5C08;
+  --el-host-bg: #cd5c08;
   --el-collapsed-bg: #451952;
   --el-collapsed-main: white;
   --body-bg: black;
@@ -23,11 +23,31 @@
     --el-main-color: black;
     --el-main-bg: white;
     --el-host-color: black;
-    --el-host-bg: #CD5C08;
+    --el-host-bg: #cd5c08;
     --el-collapsed-bg: #451952;
     --el-collapsed-main: white;
     --body-bg: white;
   }
+}
+
+.theme-dark {
+  --el-main-color: white;
+  --el-main-bg: #242424;
+  --el-host-color: white;
+  --el-host-bg: #cd5c08;
+  --el-collapsed-bg: #451952;
+  --el-collapsed-main: white;
+  --body-bg: black;
+}
+
+.theme-light {
+  --el-main-color: black;
+  --el-main-bg: white;
+  --el-host-color: black;
+  --el-host-bg: #cd5c08;
+  --el-collapsed-bg: #451952;
+  --el-collapsed-main: white;
+  --body-bg: white;
 }
 
 body {
@@ -201,4 +221,30 @@ ul {
 }
 .current-root {
   border-color: orangered;
+}
+
+.controls-form {
+  width: 100%;
+  z-index: 10;
+  height: 64px;
+  position: sticky;
+  padding-left: 16px;
+  background-color: var(--el-main-bg);
+  color: var(--el-main-color);
+
+  gap: 16px;
+  display: flex;
+  align-items: center;
+
+  & > span {
+    gap: 16px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+
+    border-left: 1px solid white;
+    > * {
+      cursor: pointer;
+    }
+  }
 }
