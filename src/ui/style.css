@@ -1,0 +1,189 @@
+:root {
+  --el-radius: 4px;
+  --el-width: 150px;
+  --el-height: fit-content;
+
+  --el-main-color: white;
+  --el-main-bg: transparent;
+
+  --el-host-color: white;
+  --el-host-bg: orangered;
+
+  --el-font-size: 12px;
+  --el-font-size-nd: 10px;
+
+  --el-sep-h: 10px;
+  --el-sep-v: 10px;
+
+  --el-collapsed-bg: purple;
+  --el-collapsed-main: while;
+}
+
+.el {
+  min-width: 100px;
+  width: var(--el-width);
+  height: var(--el-height);
+  color: var(--el-main-color);
+  font-size: var(--el-font-size);
+  border-radius: var(--el-radius);
+  background-color: var(--el-main-bg);
+  border: 1px solid var(--el-main-color);
+
+  word-wrap: normal;
+  overflow: hidden;
+
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+
+  > span {
+    display: flex;
+    padding-left: 4px;
+    padding-right: 4px;
+    flex-direction: column;
+
+    > span.el-tag {
+      text-align: start;
+      font-size: var(--el-font-size-nd);
+    }
+    > span.el-type {
+      text-align: start;
+    }
+  }
+
+  > .el-props {
+    /*max-height: 50px;*/
+    /*overflow: auto;*/
+    font-size: var(--el-font-size-nd);
+    border-top: 1px solid var(--el-main-color);
+
+    > li {
+      line-height: 1.4;
+      padding-left: 4px;
+      list-style-type: none;
+    }
+  }
+}
+
+.collapsed {
+  cursor: pointer;
+  min-width: 100px;
+  padding-left: 8px;
+  height: var(--el-height);
+  color: var(--el-collapsed-main);
+  border-radius: var(--el-radius);
+  font-size: var(--el-font-size-nd);
+  width: calc(var(--el-width) - 8px);
+  background-color: var(--el-collapsed-bg);
+  border: 1px solid var(--el-collapsed-main);
+}
+
+.el-host {
+  color: var(--el-host-color);
+  background-color: var(--el-host-bg);
+}
+
+.el-child {
+  position: relative;
+  margin-top: var(--el-sep-v);
+
+  display: flex;
+  flex-direction: column;
+}
+
+.el-child::before {
+  content: "";
+  position: absolute;
+  left: 75px;
+  height: var(--el-sep-v);
+  width: 1px;
+  background-color: var(--el-main-color);
+  translate: 0px calc(0px - var(--el-sep-v));
+}
+
+.el-sibling-separator {
+  position: absolute;
+  border: none;
+  background-color: var(--el-main-color);
+
+  top: var(--el-sep-v);
+  height: 1px;
+  left: calc(var(--el-width) + 1px);
+
+  width: calc(100% - var(--el-width) + var(--el-sep-h));
+}
+
+.el-sibling-small-separator {
+  position: absolute;
+  border: none;
+  background-color: var(--el-main-color);
+
+  top: var(--el-sep-v);
+  height: 1px;
+  left: 100%;
+
+  width: calc(100% - var(--el-width));
+}
+
+.el-root {
+}
+
+.el-sibling {
+  position: relative;
+  margin-left: var(--el-sep-h);
+
+  display: flex;
+  flex-direction: row;
+}
+
+.w-sibling {
+  position: relative;
+  flex-direction: row;
+}
+.w-sibling > div {
+  display: flex;
+}
+
+.w-sibling.w-child > div.el-sibling {
+  margin-top: 40px;
+}
+
+.w-child {
+  flex-direction: column;
+}
+
+.el-sibling::before {
+}
+
+ul {
+  padding: 0px;
+}
+
+@font-face {
+  font-family: JuneBug;
+  src: url("JUNEBUG.TTF");
+}
+
+* {
+  font-family: "Source Code Pro", monospace;
+}
+
+.el-with-sibling {
+  position: relative;
+}
+
+.with-roots-container {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.with-roots-container > div {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+}
+.current-root {
+  border-color: orangered;
+}

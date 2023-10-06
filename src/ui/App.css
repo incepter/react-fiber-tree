@@ -1,15 +1,48 @@
 #root {
-  max-width: 1280px;
+  /*max-width: 1280px;*/
   margin: 0 auto;
   padding: 2rem;
-  text-align: center;
+  /*text-align: center;*/
 }
+.App {
+}
+.edit-settings-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.header {
+  display: flex;
+  gap: 16px;
+}
+.info-disabled {
+  font-size: 1.5rem;
+  color: coral;
 
+}
+.info-enabled {
+  font-size: 1.5rem;
+  color: darkgreen;
+
+}
+.edit-settings > summary {
+  font-size: 1rem;
+  cursor: pointer;
+}
+.edit-settings {
+  padding: 1rem;
+  border: 1px solid white;
+  border-radius: 12px;
+}
+.settings-form {
+  display: flex;
+  gap: 8px;
+  flex-direction: column;
+}
 .logo {
   height: 6em;
   padding: 1.5em;
   will-change: filter;
-  transition: filter 300ms;
 }
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);

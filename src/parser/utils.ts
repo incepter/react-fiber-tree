@@ -1,8 +1,9 @@
-import { ParsedNode, ReactFiber } from "./_types.ts";
+import { ParsedNode, ReactFiber } from "./_types";
 
 export function getNodeType(node: ReactFiber) {
   return typeof node.type === "function" ? node.type.name : String(node.type);
 }
+
 export function humanizeTag(tag: number) {
   switch (tag) {
     case 0: {
@@ -92,23 +93,35 @@ export function humanizeTag(tag: number) {
   }
 }
 
+function StringValue(str) {
+  try {
+    return String(str);
+  } catch (e) {
+    return "parse-error";
+  }
+}
+
 export function getNodeProps(node: ReactFiber) {
-  let props: ParsedNode["props"] = undefined;
+  let props: ParsedNode[2] = undefined;
+
   if (node.memoizedProps !== null) {
     const memoizedProps = node.memoizedProps;
+
     if (typeof memoizedProps === "object" && memoizedProps !== null) {
       const { children, ...otherProps } = node.memoizedProps;
+
       if (typeof children === "string" || typeof children === "number") {
         props = { children };
       } else {
         const propsKeys = Object.keys(otherProps);
         if (propsKeys.length > 0) {
           props = {};
+
           for (const prop of propsKeys) {
             if (typeof memoizedProps[prop] === "function") {
               props[prop] = memoizedProps[prop].name;
             } else {
-              props[prop] = memoizedProps[prop];
+              props[prop] = StringValue(memoizedProps[prop]);
             }
           }
         }
