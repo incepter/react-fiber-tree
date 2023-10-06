@@ -1,6 +1,6 @@
 import { __DEV__, DEVTOOLS_AGENT, DEVTOOLS_PANEL } from "../shared";
-import { DevtoolsMessage, DevtoolsMessageType } from "../cs/consume";
-import {scanAndSend} from "../parser/parse";
+import { DevtoolsMessage } from "../cs/consume";
+import { scanAndSend } from "../parser/parse";
 
 let shimId = 0;
 

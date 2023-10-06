@@ -2,6 +2,7 @@ import * as React from "react";
 import { ParsedNode, ParsingReturn } from "../parser/_types";
 import "./style.css";
 import { getVariantClassName, humanizeTag } from "../parser/utils";
+import { DevtoolsContext } from "./context";
 
 type FiberRootTreeViewProps = {
   initialIndex?: number;
@@ -12,7 +13,15 @@ export function FiberTreeViewWithRoots({
   initialIndex = 0,
   results,
 }: FiberRootTreeViewProps) {
+  let context = React.useContext(DevtoolsContext);
+  if (!context) {
+    throw new Error("<DevtoolsProvider /> missing");
+  }
   const [currentIndex, setCurrentIndex] = React.useState<number>(initialIndex);
+
+  let {
+    settings: { showProps, autoCollapse },
+  } = context;
 
   const current = results[currentIndex];
   return (
@@ -31,7 +40,13 @@ export function FiberTreeViewWithRoots({
           </button>
         ))}
       </div>
-      {current && <NodeView node={current[2]} />}
+      {current && (
+        <NodeView
+          node={current[2]}
+          showProps={showProps}
+          autoCollapse={autoCollapse}
+        />
+      )}
     </div>
   );
 }
@@ -41,6 +56,9 @@ export type NodeViewProps = {
   showCollapsedChildren?: number;
   showCollapsedSibling?: number;
   variant?: "root" | "child" | "sibling";
+
+  autoCollapse: boolean;
+  showProps: boolean;
 };
 
 function NodeView({
@@ -48,6 +66,8 @@ function NodeView({
   variant = "root",
   showCollapsedChildren,
   showCollapsedSibling,
+  showProps,
+  autoCollapse,
 }: NodeViewProps) {
   if (!node) {
     return null;
@@ -75,11 +95,13 @@ function NodeView({
             )}
             <span className="el-tag">{tag}</span>
           </span>
-          <NodeProps props={props} />
+          {showProps && <NodeProps props={props} />}
         </div>
         {child && (
           <ChildNode
             child={child}
+            showProps={showProps}
+            autoCollapse={autoCollapse}
             showCollapsedSibling={showCollapsedSibling}
             showCollapsedChildren={showCollapsedChildren}
           />
@@ -89,6 +111,8 @@ function NodeView({
       {sibling && (
         <SiblingNode
           sibling={sibling}
+          showProps={showProps}
+          autoCollapse={autoCollapse}
           showCollapsedSibling={showCollapsedSibling}
           showCollapsedChildren={showCollapsedChildren}
         />
@@ -97,14 +121,21 @@ function NodeView({
   );
 }
 
-function ChildNode({ child, showCollapsedChildren, showCollapsedSibling }) {
+function ChildNode({
+  child,
+  showProps,
+  autoCollapse,
+  showCollapsedChildren,
+  showCollapsedSibling,
+}) {
   let childrenInfo = getChildrenInfo(child);
   let [showingCollapsed, setShowingCollapsed] = React.useState(
     !!showCollapsedChildren
   );
   let collapseChildTree =
-    childrenInfo.firstWithSibling > 2 ||
-    (childrenInfo.firstWithSibling === 0 && childrenInfo.count > 2);
+    autoCollapse &&
+    (childrenInfo.firstWithSibling > 2 ||
+      (childrenInfo.firstWithSibling === 0 && childrenInfo.count > 2));
   let showChildrenTree = !collapseChildTree || showingCollapsed;
 
   let nextChild = child;
@@ -123,6 +154,8 @@ function ChildNode({ child, showCollapsedChildren, showCollapsedSibling }) {
         <NodeView
           variant="child"
           node={nextChild}
+          showProps={showProps}
+          autoCollapse={autoCollapse}
           showCollapsedChildren={
             showCollapsedChildren === undefined
               ? Math.max(childrenInfo.firstWithSibling, childrenInfo.count)
@@ -150,6 +183,8 @@ function ChildNode({ child, showCollapsedChildren, showCollapsedSibling }) {
           <NodeView
             variant="child"
             node={nextChild!}
+            showProps={showProps}
+            autoCollapse={autoCollapse}
             showCollapsedSibling={showCollapsedSibling}
             showCollapsedChildren={showCollapsedChildren}
           />
@@ -182,33 +217,27 @@ function getChildrenInfo(firstChild: ParsedNode | null) {
   return { count, firstWithSibling, nextChild };
 }
 
-function SiblingNode({ sibling, showCollapsedSibling, showCollapsedChildren }) {
+function SiblingNode({
+  sibling,
+  showProps,
+  autoCollapse,
+  showCollapsedSibling,
+  showCollapsedChildren,
+}) {
   let siblingInfo = getSiblingInfo(sibling);
   let [showingCollapsed, setShowingCollapsed] = React.useState(
     !!showCollapsedSibling
   );
   let collapseSiblingTree =
-    siblingInfo.firstWithChild > 2 ||
-    (siblingInfo.firstWithChild === 0 && siblingInfo.count > 2);
+    autoCollapse &&
+    (siblingInfo.firstWithChild > 2 ||
+      (siblingInfo.firstWithChild === 0 && siblingInfo.count > 2));
 
   let showSiblingTree =
     !collapseSiblingTree || showingCollapsed || (showCollapsedSibling || 0) > 0;
 
   let nextSibling = sibling;
   // jump to next child when collapsing the tree
-  console.log(
-    "hoho",
-    siblingInfo,
-    collapseSiblingTree,
-    showingCollapsed,
-    showCollapsedSibling === undefined
-      ? Math.max(siblingInfo.firstWithChild, siblingInfo.count)
-      : showCollapsedChildren > 2
-      ? showCollapsedChildren - 1
-      : undefined,
-    showCollapsedChildren,
-    showCollapsedSibling
-  );
   if (!showSiblingTree) {
     if (siblingInfo.nextSibling) {
       nextSibling = siblingInfo.nextSibling;
@@ -223,6 +252,8 @@ function SiblingNode({ sibling, showCollapsedSibling, showCollapsedChildren }) {
         <NodeView
           variant="sibling"
           node={nextSibling}
+          showProps={showProps}
+          autoCollapse={autoCollapse}
           showCollapsedSibling={
             showCollapsedSibling === undefined
               ? Math.max(siblingInfo.firstWithChild, siblingInfo.count)
@@ -254,6 +285,8 @@ function SiblingNode({ sibling, showCollapsedSibling, showCollapsedChildren }) {
             <NodeView
               variant="sibling"
               node={nextSibling}
+              showProps={showProps}
+              autoCollapse={autoCollapse}
               showCollapsedSibling={
                 showCollapsedSibling === undefined
                   ? Math.max(siblingInfo.firstWithChild, siblingInfo.count)

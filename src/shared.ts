@@ -7,6 +7,7 @@ if (__DEV__) {
 export let libDisplayName = process.env.EXTENSION_LIB_DISPLAY_NAME || "My lib";
 export let DEVTOOLS_PANEL = `${libName}-panel` as const;
 export let DEVTOOLS_AGENT = `${libName}-agent` as const;
+export let DEVTOOLS_STORAGE = `${libName}-storage-0.0.1` as const;
 
 export type Settings = {
   enabled: boolean;

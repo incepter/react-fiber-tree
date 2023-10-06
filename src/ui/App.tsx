@@ -6,17 +6,13 @@ import { DevtoolsMessage } from "../cs/consume";
 import { devtoolsPortInDev } from "./shim";
 import { ParsingReturn } from "../parser/_types";
 import { FiberTreeViewWithRoots } from "./FiberTreeView";
+import { DevtoolsContext, DevtoolsProvider } from "./context";
 
 function getNewPort(): chrome.runtime.Port {
   if (__DEV__) {
     return devtoolsPortInDev();
   }
   return chrome.runtime.connect({ name: "panel" });
-}
-
-interface PageMessageBase {
-  tabId: number;
-  source: string;
 }
 
 export type PageMessage = {
@@ -118,25 +114,83 @@ function App() {
   }, [port]);
 
   return (
-    <div style={{}}>
+    <DevtoolsProvider>
+      <Controls targetElementRef={ref} port={port} />
       <div ref={ref} className="App">
-        {port && (
-          <div className="header">
-            <button
-              onClick={() =>
-                port!.postMessage({
-                  source: __DEV__ ? DEVTOOLS_PANEL : DEVTOOLS_PANEL,
-                  type: DevtoolsMessageType.scan,
-                  tabId: getTabId(),
-                } as DevtoolsMessage)
-              }
-            >
-              Refresh
-            </button>
-          </div>
-        )}
         {result && <FiberTreeViewWithRoots results={result} />}
       </div>
+    </DevtoolsProvider>
+  );
+}
+
+function Controls({ targetElementRef, port }) {
+  let context = React.useContext(DevtoolsContext);
+  if (!context) {
+    throw new Error("<DevtoolsProvider /> missing");
+  }
+  let { settings, setScale, setTheme, setShowProps, setAutoCollapse } = context;
+
+  function onRangeChange(e) {
+    let newScale = e.target.value / 50;
+    if (!targetElementRef.current) {
+      return;
+    }
+    setScale(targetElementRef.current, newScale);
+  }
+
+  return (
+    <div className="controls-form">
+      {port && (
+        <div className="header">
+          <button
+            onClick={() =>
+              port!.postMessage({
+                source: __DEV__ ? DEVTOOLS_PANEL : DEVTOOLS_PANEL,
+                type: DevtoolsMessageType.scan,
+                tabId: getTabId(),
+              } as DevtoolsMessage)
+            }
+          >
+            Scan and refresh
+          </button>
+        </div>
+      )}
+      <span>
+        <label htmlFor="range">Scale</label>
+        <input
+          id="range"
+          defaultValue={settings.scale * 50}
+          type="range"
+          onChange={onRangeChange}
+        />
+      </span>
+      <span>
+        <input
+          id="theme"
+          type="checkbox"
+          defaultChecked={settings.theme === "dark"}
+          onChange={(e) => setTheme(e.target.checked ? "dark" : "light")}
+        />
+        <label htmlFor="theme">Dark mode</label>
+      </span>
+      <span>
+        <input
+          id="showprops"
+          type="checkbox"
+          defaultChecked={settings.showProps}
+          onChange={(e) => setShowProps(e.target.checked)}
+        />
+        <label htmlFor="showprops">Show props</label>
+      </span>
+      <span>
+        <input
+          type="checkbox"
+          id="autocollapse"
+          defaultChecked={settings.autoCollapse}
+          onChange={(e) => setAutoCollapse(e.target.checked)}
+        />
+        <label htmlFor="autocollapse">Smart collapse</label>
+      </span>
     </div>
   );
 }
