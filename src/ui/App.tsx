@@ -1,117 +1,23 @@
 import * as React from "react";
-import "./App.css";
-import "./index.css";
 import { __DEV__, DEVTOOLS_AGENT, DEVTOOLS_PANEL, getTabId } from "../shared";
-import { DevtoolsMessage } from "../cs/consume";
 import { devtoolsPortInDev } from "./shim";
-import { ParsingReturn } from "../parser/_types";
-import { FiberTreeViewWithRoots } from "./FiberTreeView";
-import { DevtoolsContext, DevtoolsProvider } from "./context";
+import { ParsingReturn } from "../bg/parser/_types";
+import { FiberTreeViewWithRoots } from "./FiberTreeView/FiberTreeView";
+import { DevtoolsProvider } from "./context";
+import { Controls } from "./FiberTreeView/Controls";
+import { PageMessage } from "../_types";
 
-function getNewPort(): chrome.runtime.Port {
-  if (__DEV__) {
-    return devtoolsPortInDev();
-  }
-  return chrome.runtime.connect({ name: "panel" });
-}
-
-export type PageMessage = {
-  type: "scan-result";
-  data: ParsingReturn[];
-  source: typeof DEVTOOLS_AGENT;
-};
-
-export enum DevtoolsMessageType {
-  init = "init",
-  scan = "scan",
-}
-
-const zoomFactor = 0.02;
-
-function App() {
-  const ref = React.useRef<HTMLDivElement | null>(null);
+export default function App() {
+  let ref = React.useRef<HTMLDivElement | null>(null);
+  let [result, setResult] = React.useState<ParsingReturn[] | null>(null);
   let [port, setPort] = React.useState<chrome.runtime.Port | null>(getNewPort);
 
-  let [result, setResult] = React.useState<ParsingReturn[] | null>(null);
+  // enable zoom using wheel or gestures
+  React.useLayoutEffect(registerWheelZoomOnContainer.bind(null, ref), []);
 
-  React.useLayoutEffect(() => {
-    let targetElement = ref.current;
-    if (!targetElement) {
-      return;
-    }
-
-    let currentScale = +targetElement?.style.scale || 1;
-
-    function onWheel(e: WheelEvent) {
-      const isZoom = e.deltaY !== 0 && e.ctrlKey;
-      if (isZoom) {
-        // e.preventDefault();
-        const isZoomIn = e.deltaY > 0;
-
-        let newScale = isZoomIn
-          ? currentScale - zoomFactor
-          : currentScale + zoomFactor;
-
-        currentScale = Math.max(0.1, Math.min(2, newScale));
-        targetElement!.style.scale = "" + currentScale;
-      }
-    }
-
-    targetElement?.addEventListener("wheel", onWheel);
-    return () => {
-      targetElement?.removeEventListener("wheel", onWheel);
-    };
-  }, []);
-
-  React.useEffect(() => {
-    if (!port) {
-      let newPort = getNewPort();
-      setPort(newPort);
-      return;
-    }
-    let disconnected = false;
-
-    port.postMessage({
-      source: DEVTOOLS_PANEL,
-      type: DevtoolsMessageType.init,
-      tabId: getTabId(),
-    });
-
-    port.onMessage.addListener(onMessageFromPage);
-    port.onDisconnect.addListener(() =>
-      port!.onMessage.removeListener(onMessageFromPage)
-    );
-    port.onDisconnect.addListener(onPortDisconnect);
-
-    return onPortDisconnect;
-
-    function onMessageFromPage(message: PageMessage) {
-      if (disconnected) {
-        return;
-      }
-      if (!__DEV__) {
-        if (message.source !== DEVTOOLS_AGENT) {
-          return;
-        }
-      }
-
-      switch (message.type) {
-        case "scan-result": {
-          let data = message.data;
-          setResult(data);
-        }
-      }
-    }
-
-    function onPortDisconnect() {
-      if (disconnected) {
-        return;
-      }
-      port!.onMessage.removeListener(onMessageFromPage);
-      disconnected = true;
-      setPort(null);
-    }
-  }, [port]);
+  // subscribe to the runtime port to received messages
+  // state setters can be ignored from deps arrays ;)
+  React.useEffect(subscribeToPort.bind(null, port, setPort, setResult), [port]);
 
   return (
     <DevtoolsProvider>
@@ -123,76 +29,98 @@ function App() {
   );
 }
 
-function Controls({ targetElementRef, port }) {
-  let context = React.useContext(DevtoolsContext);
-  if (!context) {
-    throw new Error("<DevtoolsProvider /> missing");
+// will construct the chrome.runtime.Port object
+// in dev mode, it falls back to the one defined in shim.ts
+function getNewPort(): chrome.runtime.Port {
+  if (__DEV__) {
+    return devtoolsPortInDev();
   }
-  let { settings, setScale, setTheme, setShowProps, setAutoCollapse } = context;
-
-  function onRangeChange(e) {
-    let newScale = e.target.value / 50;
-    if (!targetElementRef.current) {
-      return;
-    }
-    setScale(targetElementRef.current, newScale);
-  }
-
-  return (
-    <div className="controls-form">
-      {port && (
-        <div className="header">
-          <button
-            onClick={() =>
-              port!.postMessage({
-                source: __DEV__ ? DEVTOOLS_PANEL : DEVTOOLS_PANEL,
-                type: DevtoolsMessageType.scan,
-                tabId: getTabId(),
-              } as DevtoolsMessage)
-            }
-          >
-            Scan and refresh
-          </button>
-        </div>
-      )}
-      <span>
-        <label htmlFor="range">Scale</label>
-        <input
-          id="range"
-          defaultValue={settings.scale * 50}
-          type="range"
-          onChange={onRangeChange}
-        />
-      </span>
-      <span>
-        <input
-          id="theme"
-          type="checkbox"
-          defaultChecked={settings.theme === "dark"}
-          onChange={(e) => setTheme(e.target.checked ? "dark" : "light")}
-        />
-        <label htmlFor="theme">Dark mode</label>
-      </span>
-      <span>
-        <input
-          id="showprops"
-          type="checkbox"
-          defaultChecked={settings.showProps}
-          onChange={(e) => setShowProps(e.target.checked)}
-        />
-        <label htmlFor="showprops">Show props</label>
-      </span>
-      <span>
-        <input
-          type="checkbox"
-          id="autocollapse"
-          defaultChecked={settings.autoCollapse}
-          onChange={(e) => setAutoCollapse(e.target.checked)}
-        />
-        <label htmlFor="autocollapse">Smart collapse</label>
-      </span>
-    </div>
-  );
+  return chrome.runtime.connect({ name: "panel" });
 }
 
-export default App;
+// this runs as a passive effect (useEffect)
+function subscribeToPort(
+  port: chrome.runtime.Port | null,
+  setPort: React.Dispatch<React.SetStateAction<chrome.runtime.Port | null>>,
+  setState: React.Dispatch<React.SetStateAction<ParsingReturn[] | null>>
+) {
+  if (!port) {
+    let newPort = getNewPort();
+    setPort(newPort);
+    return;
+  }
+
+  let disconnected = false;
+  port.onMessage.addListener(onMessageFromPage);
+  port.onDisconnect.addListener(onPortDisconnect);
+
+  // post the init message, the agent will respond with the scan result
+  port.postMessage({
+    type: "init",
+    tabId: getTabId(),
+    source: DEVTOOLS_PANEL,
+  });
+
+  return onPortDisconnect;
+
+  function onMessageFromPage(message: PageMessage) {
+    if (!disconnected) {
+      // only allow the agent to speak with this
+      // in dev mode, the shim sends this too
+      if (message.source === DEVTOOLS_AGENT) {
+        // we only support the scan result type for now
+        // scan-result will give all roots on page with all their fiber tree
+        switch (message.type) {
+          case "scan-result": {
+            setState(message.data);
+          }
+        }
+      }
+    } else {
+      // being here means a bug, how it did disconnect without unsubscribe?
+      onPortDisconnect();
+    }
+  }
+
+  function onPortDisconnect() {
+    if (!disconnected) {
+      disconnected = true;
+
+      setPort(null);
+      port!.onMessage.removeListener(onMessageFromPage);
+    }
+  }
+}
+
+const zoomFactor = 0.02;
+// this will register the onWheel event on the target element in layout effect
+function registerWheelZoomOnContainer(
+  reactRef: React.MutableRefObject<HTMLDivElement | null>
+) {
+  let targetElement = reactRef.current;
+  if (!targetElement) {
+    return;
+  }
+
+  let currentScale = +targetElement?.style.scale || 1;
+
+  function onWheel(e: WheelEvent) {
+    let isZoom = e.deltaY !== 0 && e.ctrlKey;
+    if (isZoom) {
+      // e.preventDefault();
+      let isZoomIn = e.deltaY > 0;
+
+      let newScale = isZoomIn
+        ? currentScale - zoomFactor
+        : currentScale + zoomFactor;
+
+      currentScale = Math.max(0.1, Math.min(2, newScale));
+      targetElement!.style.scale = "" + currentScale;
+    }
+  }
+
+  targetElement?.addEventListener("wheel", onWheel);
+  return () => {
+    targetElement?.removeEventListener("wheel", onWheel);
+  };
+}

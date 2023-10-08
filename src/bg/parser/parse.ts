@@ -1,7 +1,7 @@
 import { ParsedNode, ParsingReturn, ReactFiber } from "./_types";
 import { getNodeProps, getNodeType, humanizeTag } from "./utils";
 import React from "react";
-import {DEVTOOLS_AGENT} from "../shared";
+import {DEVTOOLS_AGENT} from "../../shared";
 
 let visitedFibersCount = 0;
 let currentChildrenSiblingsOffset = 0;

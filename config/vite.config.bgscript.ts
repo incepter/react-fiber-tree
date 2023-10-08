@@ -13,7 +13,7 @@ export default defineConfig(({mode}) => {
       emptyOutDir: false,
 
       rollupOptions: {
-        input: "src/parser/index.ts",
+        input: "src/bg/parser/index.ts",
         preserveEntrySignatures: "exports-only",
         output: {
           format: "umd",

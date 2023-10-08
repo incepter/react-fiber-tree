@@ -1,5 +1,5 @@
-import { scanAndSend } from "./parse.js";
-import { DEVTOOLS_PANEL } from "../shared";
+import { scanAndSend } from "./parse";
+import { DEVTOOLS_PANEL } from "../../shared";
 
 if (!window.__REACT_FIBER_TREE__) {
   window.__REACT_FIBER_TREE__ = {

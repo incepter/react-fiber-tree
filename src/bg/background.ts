@@ -1,5 +1,4 @@
 import { DEVTOOLS_PANEL } from "../shared";
-import { DevtoolsMessageType } from "../cs/consume";
 
 chrome.runtime.onMessage.addListener(onMessageFromContentScript); // content-script -> background (here) -> devtools
 chrome.runtime.onConnect.addListener(onDevtoolsConnect);
@@ -26,7 +25,7 @@ function onDevtoolsConnect(port) {
       return;
     }
     console.log("__________________bg received", message);
-    if (message.type === DevtoolsMessageType.init) {
+    if (message.type === "init") {
       if (tabId && ports[tabId]) {
         onDevtoolsDisconnect();
       }
@@ -68,19 +67,9 @@ function onDevtoolsConnect(port) {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete") {
     chrome.tabs.sendMessage(tabId, {
+      type: "init",
       source: DEVTOOLS_PANEL,
-      type: DevtoolsMessageType.init,
     });
   }
 });
 
-declare global {
-  interface Window {
-    __REACT_FIBER_TREE__: {
-      scanAndSend(): void;
-    };
-    __REACT_DEVTOOLS_GLOBAL_HOOK__: {
-      getFiberRoots(id: number): Set<any>;
-    };
-  }
-}

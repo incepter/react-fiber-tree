@@ -1,22 +1,29 @@
 import { DEVTOOLS_AGENT, DEVTOOLS_PANEL } from "../shared";
 
-(window as any).chrome.runtime.onMessage.addListener(onMessageFromBackground); // background -> content-script (here) -> page
-(window as any).addEventListener("message", onMessageFromPage); // page -> content-script (here) -> background
+// page -> content-script (here) -> background
+window.addEventListener("message", onMessageFromPage);
 
-function onMessageFromBackground(message) {
-  if (message.source !== DEVTOOLS_PANEL) {
-    return;
-  }
-  (window as any).postMessage(message, "*");
-}
+// background -> content-script (here) -> page
+window.chrome.runtime.onMessage.addListener(onMessageFromBackground);
 
 function onMessageFromPage(event) {
   // page -> content-script (here) -> background
+  // only allow messages from the same window and from the devtools agent
+  // these messages are to be transferred to the background
   if (
     event.source === window &&
     event.data &&
     event.data.source === DEVTOOLS_AGENT
   ) {
-    (window as any).chrome.runtime.sendMessage(event.data);
+    window.chrome.runtime.sendMessage(event.data);
+  }
+}
+
+function onMessageFromBackground(message) {
+  // background -> content-script (here) -> page
+  // only allow messages from devtools
+  // messages from devtools are re-posted on the page
+  if (message.source === DEVTOOLS_PANEL) {
+    window.postMessage(message, "*");
   }
 }
