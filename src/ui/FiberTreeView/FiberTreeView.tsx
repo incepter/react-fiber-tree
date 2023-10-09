@@ -71,7 +71,7 @@ function NodeView({
     return null;
   }
 
-  const [numberTag, type, props, _offset, child, sibling] = node;
+  const [numberTag, type, props, child, sibling] = node;
 
   const tag = humanizeTag(numberTag);
   const elementTitle = `${String(type)}\n(${tag})`;
@@ -239,14 +239,14 @@ function getChildrenInfo(firstChild: ParsedNode | null) {
   while (current !== null) {
     count += 1;
 
-    let sibling = current[5];
+    let sibling = current[4];
     if (sibling) {
       // no need to continue, just stop at the first child with a sibling
       // we will then decide whether to show or collapse what's between them
       return { count, nextChild: current };
     }
 
-    current = current[4];
+    current = current[3];
   }
 
   return { count, nextChild: null };
@@ -335,14 +335,14 @@ function getSiblingInfo(firstSibling: ParsedNode | null) {
   while (current !== null) {
     count += 1;
 
-    let child = current[4];
+    let child = current[3];
     if (child) {
       // no need to continue, just stop at the first sibling with a child
       // we will then decide whether to show or collapse what's between them
       return { count, nextSibling: current };
     }
 
-    current = current[5];
+    current = current[4];
   }
 
   return { count, nextSibling: null };

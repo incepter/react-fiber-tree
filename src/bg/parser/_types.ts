@@ -4,9 +4,8 @@ export type ParsedNode = [
   tag: number, // 0
   type: string, // 1
   props: Props, // 2
-  offset: number, // 3
-  child: ParsedNode | null, // 4
-  sibling: ParsedNode | null // 5
+  child: ParsedNode | null, // 3
+  sibling: ParsedNode | null // 4
 ];
 
 export type Props =

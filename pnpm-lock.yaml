@@ -17,8 +17,8 @@ devDependencies:
     specifier: ^5.0.2
     version: 5.0.2
   '@types/chrome':
-    specifier: ^0.0.206
-    version: 0.0.206
+    specifier: ^0.0.246
+    version: 0.0.246
   '@types/node':
     specifier: ^18.11.18
     version: 18.11.18
@@ -609,8 +609,8 @@ packages:
       picomatch: 2.3.1
     dev: true
 
-  /@types/chrome@0.0.206:
-    resolution: {integrity: sha512-fQnTFjghPB9S4UzbfublUB6KmsBkvvJeGXGaaoD5Qu+ZxrDUfgJnKN5egLSzDcGAH5YxQubDgbCdNwwUGewQHg==}
+  /@types/chrome@0.0.246:
+    resolution: {integrity: sha512-MxGxEomGxsJiL9xe/7ZwVgwdn8XVKWbPvxpVQl3nWOjrS0Ce63JsfzxUc4aU3GvRcUPYsfufHmJ17BFyKxeA4g==}
     dependencies:
       '@types/filesystem': 0.0.32
       '@types/har-format': 1.2.10
