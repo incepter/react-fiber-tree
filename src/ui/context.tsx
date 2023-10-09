@@ -1,25 +1,9 @@
 import * as React from "react";
 import { DEVTOOLS_STORAGE } from "../shared";
 
-export type DevtoolsContextType = {
-  settings: DevtoolsSettings;
-  setTheme(theme: "dark" | "light" | "system"): void;
-  setScale(target: HTMLDivElement, scale: number): void;
-
-  setShowProps(value: boolean): void;
-  setAutoCollapse(value: boolean): void;
-};
-
 export const DevtoolsContext = React.createContext<DevtoolsContextType | null>(
   null
 );
-
-export type DevtoolsSettings = {
-  scale: number;
-  showProps: boolean;
-  autoCollapse: boolean;
-  theme: "dark" | "light" | "system";
-};
 
 export function DevtoolsProvider(props: { children: React.ReactNode }) {
   let [settings, setSettings] = React.useState(loadSavedSettings);
@@ -71,7 +55,7 @@ export function DevtoolsProvider(props: { children: React.ReactNode }) {
   );
 }
 
-function applyTheme(theme) {
+function applyTheme(theme: "light" | "dark" | "system") {
   let documentElement = document.body;
 
   if (theme === "system") {
@@ -108,3 +92,26 @@ function loadSavedSettings(): DevtoolsSettings {
 function saveSettings(s: DevtoolsSettings) {
   localStorage.setItem(DEVTOOLS_STORAGE, JSON.stringify(s));
 }
+
+export function useDevtoolsContext() {
+  let context = React.useContext(DevtoolsContext);
+  if (!context) {
+    throw new Error("<DevtoolsProvider /> missing");
+  }
+  return context;
+}
+
+export type DevtoolsContextType = {
+  settings: DevtoolsSettings;
+  setShowProps(value: boolean): void;
+  setAutoCollapse(value: boolean): void;
+  setTheme(theme: "dark" | "light" | "system"): void;
+  setScale(target: HTMLDivElement, scale: number): void;
+};
+
+export type DevtoolsSettings = {
+  scale: number;
+  showProps: boolean;
+  autoCollapse: boolean;
+  theme: "dark" | "light" | "system";
+};

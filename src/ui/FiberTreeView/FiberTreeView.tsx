@@ -1,8 +1,8 @@
 import * as React from "react";
-import { ParsedNode, ParsingReturn } from "../parser/_types";
-import "./style.css";
-import { getVariantClassName, humanizeTag } from "../parser/utils";
-import { DevtoolsContext } from "./context";
+import { ParsedNode, ParsingReturn } from "../../bg/parser/_types";
+import "../style.css";
+import { getVariantClassName, humanizeTag } from "../../bg/parser/utils";
+import { useDevtoolsContext } from "../context";
 
 type FiberRootTreeViewProps = {
   initialIndex?: number;
@@ -10,19 +10,15 @@ type FiberRootTreeViewProps = {
 };
 
 export function FiberTreeViewWithRoots({
-  initialIndex = 0,
   results,
+  initialIndex = 0,
 }: FiberRootTreeViewProps) {
-  let context = React.useContext(DevtoolsContext);
-  if (!context) {
-    throw new Error("<DevtoolsProvider /> missing");
-  }
+  const { settings } = useDevtoolsContext();
+  let { showProps, autoCollapse } = settings;
+
   const [currentIndex, setCurrentIndex] = React.useState<number>(initialIndex);
 
-  let {
-    settings: { showProps, autoCollapse },
-  } = context;
-
+  // current is the currently displayed root with its structure
   const current = results[currentIndex];
   return (
     <div className="with-roots-container">
@@ -51,39 +47,41 @@ export function FiberTreeViewWithRoots({
   );
 }
 
-export type NodeViewProps = {
-  node: ParsedNode;
+interface NodeViewPropsBase {
+  showProps: boolean;
+  autoCollapse: boolean;
   showCollapsedChildren?: number;
   showCollapsedSibling?: number;
   variant?: "root" | "child" | "sibling";
+}
 
-  autoCollapse: boolean;
-  showProps: boolean;
-};
+interface NodeViewProps extends NodeViewPropsBase {
+  node: ParsedNode;
+}
 
 function NodeView({
   node,
+  showProps,
+  autoCollapse,
   variant = "root",
   showCollapsedChildren,
   showCollapsedSibling,
-  showProps,
-  autoCollapse,
 }: NodeViewProps) {
   if (!node) {
     return null;
   }
 
-  const [numberTag, type, props, _offset, child, sibling] = node;
+  const [numberTag, type, props, child, sibling] = node;
 
   const tag = humanizeTag(numberTag);
-
+  const elementTitle = `${String(type)}\n(${tag})`;
   const variantClx = getVariantClassName(variant);
   const isHostThing = tag.startsWith("Host") && tag !== "HostRoot";
-
   const containerClx = `${variantClx} ${sibling ? "w-sibling" : ""}`;
   const mainClx = `${sibling ? "w-child" : ""} ${sibling ? "w-sibling" : ""}`;
 
-  let elementTitle = `${String(type)}\n(${tag})`;
+  const ChildComponent = autoCollapse ? CollapsibleChild : DefaultChild;
+  const SiblingComponent = autoCollapse ? CollapsibleSibling : DefaultSibling;
 
   return (
     <div className={containerClx}>
@@ -98,7 +96,7 @@ function NodeView({
           {showProps && <NodeProps props={props} />}
         </div>
         {child && (
-          <ChildNode
+          <ChildComponent
             child={child}
             showProps={showProps}
             autoCollapse={autoCollapse}
@@ -109,7 +107,7 @@ function NodeView({
         {sibling && <div className="el-sibling-separator"></div>}
       </div>
       {sibling && (
-        <SiblingNode
+        <SiblingComponent
           sibling={sibling}
           showProps={showProps}
           autoCollapse={autoCollapse}
@@ -121,122 +119,157 @@ function NodeView({
   );
 }
 
-function ChildNode({
+function DefaultChild({
   child,
   showProps,
   autoCollapse,
-  showCollapsedChildren,
-  showCollapsedSibling,
-}) {
-  let childrenInfo = getChildrenInfo(child);
-  let [showingCollapsed, setShowingCollapsed] = React.useState(
-    !!showCollapsedChildren
+  showCollapsedChildren: showChild,
+  showCollapsedSibling: showSibling,
+}: NodeViewPropsBase & { child: ParsedNode }) {
+  return (
+    <NodeView
+      node={child}
+      variant="child"
+      showProps={showProps}
+      autoCollapse={autoCollapse}
+      showCollapsedChildren={showChild}
+      showCollapsedSibling={showSibling}
+    />
   );
-  let collapseChildTree =
-    autoCollapse &&
-    (childrenInfo.firstWithSibling > 2 ||
-      (childrenInfo.firstWithSibling === 0 && childrenInfo.count > 2));
-  let showChildrenTree = !collapseChildTree || showingCollapsed;
+}
+function DefaultSibling({
+  sibling,
+  showProps,
+  autoCollapse,
+  showCollapsedChildren: showChild,
+  showCollapsedSibling: showSibling,
+}: NodeViewPropsBase & { sibling: ParsedNode }) {
+  return (
+    <NodeView
+      node={sibling}
+      variant="sibling"
+      showProps={showProps}
+      autoCollapse={autoCollapse}
+      showCollapsedChildren={showChild}
+      showCollapsedSibling={showSibling}
+    />
+  );
+}
 
-  let nextChild = child;
+function CollapsibleChild({
+  child,
+  showProps,
+  autoCollapse,
+  showCollapsedChildren: showChild,
+  showCollapsedSibling: showSibling,
+}: NodeViewPropsBase & { child: ParsedNode }) {
+  if (!autoCollapse) {
+    throw new Error("Called CollapsibleChild with autoCollapse false");
+  }
+
+  let [showingCollapsed, setShowingCollapsed] = React.useState(!!showChild);
+
+  let childrenInfo = getChildrenInfo(child);
+  let collapseChildTree = childrenInfo.count > 2;
+  let showTree = !collapseChildTree || showingCollapsed;
+
+  let nextChild: ParsedNode | null = child;
+  let nextShowCollapsedChildrenProp = showChild;
   // jump to next child when collapsing the tree
-  if (!showChildrenTree) {
+  if (!showTree) {
     if (childrenInfo.nextChild) {
       nextChild = childrenInfo.nextChild;
     } else {
       nextChild = null;
     }
   }
+  if (nextChild && showTree) {
+    // when showChild isn't provided, then take childrenInfo.count
+    // this will start the cycle.
+    // and reset to undefined too to avoid passing 0
+    nextShowCollapsedChildrenProp =
+      showChild === undefined
+        ? childrenInfo.count
+        : showChild > 2
+        ? showChild - 1
+        : undefined;
+  }
 
   return (
     <>
-      {nextChild && showChildrenTree && (
+      {nextChild && showTree && (
         <NodeView
           variant="child"
           node={nextChild}
           showProps={showProps}
           autoCollapse={autoCollapse}
-          showCollapsedChildren={
-            showCollapsedChildren === undefined
-              ? Math.max(childrenInfo.firstWithSibling, childrenInfo.count)
-              : showCollapsedChildren > 2
-              ? showCollapsedChildren - 1
-              : undefined
-          }
-          showCollapsedSibling={showCollapsedSibling}
+          showCollapsedSibling={showSibling}
+          showCollapsedChildren={nextShowCollapsedChildrenProp}
         />
       )}
-      {child && !showChildrenTree && (
-        <>
+      {child &&
+        !showTree && [
           <div
-            onClick={() => {
-              setShowingCollapsed(true);
-            }}
+            key="child-separator"
             className="collapsed el-child"
+            onClick={() => setShowingCollapsed(true)}
           >
-            {`Click to view ${
-              childrenInfo.firstWithSibling
-                ? childrenInfo.firstWithSibling
-                : childrenInfo.count
-            } items`}
-          </div>
+            {`Click to view ${childrenInfo.count} items`}
+          </div>,
           <NodeView
+            key="child"
             variant="child"
             node={nextChild!}
             showProps={showProps}
             autoCollapse={autoCollapse}
-            showCollapsedSibling={showCollapsedSibling}
-            showCollapsedChildren={showCollapsedChildren}
-          />
-        </>
-      )}
+            showCollapsedChildren={showChild}
+            showCollapsedSibling={showSibling}
+          />,
+        ]}
     </>
   );
 }
 
 function getChildrenInfo(firstChild: ParsedNode | null) {
   if (!firstChild) {
-    return { count: 0, firstWithSibling: 0 };
+    return { count: 0 };
   }
   let count = 0;
-  let firstWithSibling = 0;
-  let nextChild: ParsedNode | null = null;
   let current: ParsedNode | null = firstChild;
   while (current !== null) {
     count += 1;
 
-    let sibling = current[5];
-    if (!firstWithSibling && sibling) {
-      nextChild = current;
-      firstWithSibling = count;
+    let sibling = current[4];
+    if (sibling) {
+      // no need to continue, just stop at the first child with a sibling
+      // we will then decide whether to show or collapse what's between them
+      return { count, nextChild: current };
     }
 
-    current = current[4];
+    current = current[3];
   }
 
-  return { count, firstWithSibling, nextChild };
+  return { count, nextChild: null };
 }
 
-function SiblingNode({
+function CollapsibleSibling({
   sibling,
   showProps,
   autoCollapse,
-  showCollapsedSibling,
-  showCollapsedChildren,
-}) {
+  showCollapsedChildren: showChild,
+  showCollapsedSibling: showSibling,
+}: NodeViewPropsBase & { sibling: ParsedNode }) {
+  if (!autoCollapse) {
+    throw new Error("Called CollapsibleSibling with autoCollapse false");
+  }
+
   let siblingInfo = getSiblingInfo(sibling);
-  let [showingCollapsed, setShowingCollapsed] = React.useState(
-    !!showCollapsedSibling
-  );
-  let collapseSiblingTree =
-    autoCollapse &&
-    (siblingInfo.firstWithChild > 2 ||
-      (siblingInfo.firstWithChild === 0 && siblingInfo.count > 2));
+  let [showingCollapsed, setShowingCollapsed] = React.useState(!!showSibling);
 
-  let showSiblingTree =
-    !collapseSiblingTree || showingCollapsed || (showCollapsedSibling || 0) > 0;
+  let collapseTree = siblingInfo.count > 2;
+  let showSiblingTree = !collapseTree || showingCollapsed;
 
-  let nextSibling = sibling;
+  let nextSibling: ParsedNode | null = sibling;
   // jump to next child when collapsing the tree
   if (!showSiblingTree) {
     if (siblingInfo.nextSibling) {
@@ -245,6 +278,12 @@ function SiblingNode({
       nextSibling = null;
     }
   }
+  let nextShowCollapsedSiblingProp =
+    showSibling === undefined
+      ? siblingInfo.count
+      : showSibling > 2
+      ? showSibling - 1
+      : undefined;
 
   return (
     <>
@@ -254,14 +293,8 @@ function SiblingNode({
           node={nextSibling}
           showProps={showProps}
           autoCollapse={autoCollapse}
-          showCollapsedSibling={
-            showCollapsedSibling === undefined
-              ? Math.max(siblingInfo.firstWithChild, siblingInfo.count)
-              : showCollapsedSibling > 2
-              ? showCollapsedSibling - 1
-              : undefined
-          }
-          showCollapsedChildren={showCollapsedChildren}
+          showCollapsedChildren={showChild}
+          showCollapsedSibling={nextShowCollapsedSiblingProp}
         />
       )}
       {sibling && !showSiblingTree && (
@@ -273,11 +306,7 @@ function SiblingNode({
               }}
               className="collapsed el-sibling"
             >
-              {`Click to view ${
-                siblingInfo.firstWithChild
-                  ? siblingInfo.firstWithChild - 1
-                  : siblingInfo.count
-              } items`}
+              {`Click to view ${siblingInfo.count} items`}
             </div>
             <div className="el-sibling-small-separator"></div>
           </div>
@@ -287,14 +316,8 @@ function SiblingNode({
               node={nextSibling}
               showProps={showProps}
               autoCollapse={autoCollapse}
-              showCollapsedSibling={
-                showCollapsedSibling === undefined
-                  ? Math.max(siblingInfo.firstWithChild, siblingInfo.count)
-                  : showCollapsedSibling > 2
-                  ? showCollapsedSibling - 1
-                  : undefined
-              }
-              showCollapsedChildren={showCollapsedChildren}
+              showCollapsedChildren={showChild}
+              showCollapsedSibling={nextShowCollapsedSiblingProp}
             />
           )}
         </>
@@ -305,25 +328,24 @@ function SiblingNode({
 
 function getSiblingInfo(firstSibling: ParsedNode | null) {
   if (!firstSibling) {
-    return { count: 0, firstWithChild: 0 };
+    return { count: 0 };
   }
   let count = 0;
-  let firstWithChild = 0;
-  let nextSibling: ParsedNode | null = null;
   let current: ParsedNode | null = firstSibling;
   while (current !== null) {
     count += 1;
 
-    let child = current[4];
-    if (!firstWithChild && child) {
-      nextSibling = current;
-      firstWithChild = count;
+    let child = current[3];
+    if (child) {
+      // no need to continue, just stop at the first sibling with a child
+      // we will then decide whether to show or collapse what's between them
+      return { count, nextSibling: current };
     }
 
-    current = current[5];
+    current = current[4];
   }
 
-  return { count, firstWithChild, nextSibling };
+  return { count, nextSibling: null };
 }
 
 function safeString(src: any) {
@@ -334,7 +356,7 @@ function safeString(src: any) {
   }
 }
 
-function propDisplay(prop, value) {
+function propDisplay(prop: string, value: any) {
   return `${prop !== "" ? `${prop}: ` : ""}${safeString(value).substring(
     0,
     20
@@ -343,10 +365,19 @@ function propDisplay(prop, value) {
 
 function NodeProps({ props }) {
   let propsEntries = props && Object.entries(props);
+
+  // only display two props
   let slicedProps = propsEntries && propsEntries.slice(0, 2);
+
+  // the title will show all props
   let propsTitle =
     propsEntries &&
-    propsEntries.map((t) => `${t[0]}: ${safeString(t[1])}`).join("\n");
+    propsEntries
+      .map((t: [string, any]) => `${t[0]}: ${safeString(t[1])}`)
+      .join("\n");
+
+  // when slicing, we display another prop with the collapsed elements count
+  // that will expand the tree to see collapsed items
   if (
     slicedProps &&
     propsEntries &&

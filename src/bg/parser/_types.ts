@@ -1,21 +1,11 @@
 import React from "react";
 
-export type ParsedNodeStructured = {
-  tag: number;
-  type: string;
-  props: Props;
-  offset: number;
-  child: ParsedNode | null;
-  sibling: ParsedNode | null;
-};
-
 export type ParsedNode = [
   tag: number, // 0
   type: string, // 1
   props: Props, // 2
-  offset: number, // 3
-  child: ParsedNode | null, // 4
-  sibling: ParsedNode | null // 5
+  child: ParsedNode | null, // 3
+  sibling: ParsedNode | null // 4
 ];
 
 export type Props =
